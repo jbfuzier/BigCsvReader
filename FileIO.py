@@ -38,6 +38,19 @@ class TableModel(QAbstractTableModel):
         else:
             self.initial_sort -= 1
 
+    def save(self, path):
+        """
+        Save current filtered file to disk
+        """
+        logging.debug("Saving to %s" % (path))
+        self.file_io.save(path)
+
+    def revertToFilter(self,id):
+        """
+        Restore state to given filter id
+        """
+        self.file_io.revertToFilter(id)
+
     def filter(self, pattern, column=-1, exact=False, mode="exclude"):
         self.file_io.filter(column, pattern, exact, mode)
         self.modelReset.emit()
@@ -55,6 +68,22 @@ class TableModel(QAbstractTableModel):
             else:
                 self.filter(pattern=selected_text, column=column, exact=filter['exact'])
 
+    def listFilters(self):
+        """
+        Returns applied filters
+        """
+        filters = []
+        total = self.file_io.initialRowCount()
+        for f in self.file_io.data_row_offset_map:
+            filters.append(
+                {
+                    'name': f['operation'],
+                    'id': f['id'],
+                    'lines': len(f['row_offsets']),
+                    'pcent': 100*len(f['row_offsets'])/total,
+                }
+            )
+        return filters
 
 class FileIO():
     #you must implement rowCount(), columnCount(), and data(row,collumn)
@@ -73,6 +102,15 @@ class FileIO():
         self.cached_lines =(0,0)
         self.column_count = None
 
+
+    def revertToFilter(self,id):
+        """
+        Restore state to given filter id
+        """
+        filter = [d for d in self.data_row_offset_map if d['id'] == int(id)][0]
+        logging.debug("Reverting to filter %s : %s" % (id, filter['operation']))
+        self.data_row_offset_map.append(filter)
+
     def computeLineOffset(self):
         logging.debug("Computing line offsets")
         current_offset = 0
@@ -82,7 +120,8 @@ class FileIO():
             current_offset += len(line)
         fileorder = {
             'operation':'fileorder',
-            'row_offsets':line_offsets
+            'row_offsets':line_offsets,
+            'id': 0,
         }
         self.data_row_offset_map.append(fileorder)
         logging.debug("Done")
@@ -92,6 +131,13 @@ class FileIO():
 
     def rowCount(self):
         row_count = len(self.getLineOffsets())
+        return row_count
+
+    def initialRowCount(self):
+        """
+        return row count before any filtering
+        """
+        row_count = len(self.data_row_offset_map[0]['row_offsets'])
         return row_count
 
     def columnCount(self):
@@ -127,7 +173,8 @@ class FileIO():
         self.data_row_offset_map.append(
             {
                 'operation':'sort%s'%(column),
-                'row_offsets':row_offsets
+                'row_offsets':row_offsets,
+                'id': max([d['id'] for d in self.data_row_offset_map]) + 1,
             }
         )
 
@@ -163,6 +210,16 @@ class FileIO():
             }
         )
 
+    def save(self, path):
+        """
+        Save current filtered file to disk
+        """
+        f = open(path, 'wb')
+        for i in range(self.rowCount()):
+            row = self.getRow(i)
+            f.write(row)
+        f.close()
+
 
     def filter(self, column, pattern, exact=False, mode="exclude"):
         # Remove every line with a collumns containing pattern
@@ -193,7 +250,8 @@ class FileIO():
         self.data_row_offset_map.append(
             {
                 'operation':'filter%s%s%s'%(column, pattern, exact),
-                'row_offsets':row_offsets
+                'row_offsets':row_offsets,
+                'id': max([d['id'] for d in self.data_row_offset_map]) + 1,
             }
         )
         pass
