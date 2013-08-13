@@ -50,6 +50,7 @@ class TableModel(QAbstractTableModel):
         Restore state to given filter id
         """
         self.file_io.revertToFilter(id)
+        self.modelReset.emit()
 
     def filter(self, pattern, column=-1, exact=False, mode="exclude"):
         self.file_io.filter(column, pattern, exact, mode)
@@ -88,7 +89,7 @@ class TableModel(QAbstractTableModel):
 class FileIO():
     #you must implement rowCount(), columnCount(), and data(row,collumn)
     def __init__(self, f_p):
-        self.f = open(f_p, 'r')
+        self.f = open(f_p, 'rb')
         self.line_offsets = []
         self.data_row_offset_map = []
         """ contains : {
@@ -98,7 +99,7 @@ class FileIO():
         self.RAM_CACHE_SIZE = 10
         self.computeLineOffset()
         self.ram_cache = []
-        self.SEPARATOR = ";"
+        self.SEPARATOR = ","
         self.cached_lines =(0,0)
         self.column_count = None
 
@@ -113,11 +114,16 @@ class FileIO():
 
     def computeLineOffset(self):
         logging.debug("Computing line offsets")
-        current_offset = 0
+        start_offset = 0
         line_offsets = []
-        for line in self.f:
-            line_offsets.append( (current_offset, len(line)) )
-            current_offset += len(line)
+        while True:
+            row =self.f.readline()
+            if len(row) <= 0:
+                break
+            end_offset = self.f.tell()
+            line_offsets.append( (start_offset, end_offset - start_offset) )
+            start_offset = end_offset
+            #current_offset += len(line)
         fileorder = {
             'operation':'fileorder',
             'row_offsets':line_offsets,
