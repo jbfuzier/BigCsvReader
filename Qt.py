@@ -19,6 +19,7 @@ class MyWindow(QMainWindow):
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QGridLayout(self.centralwidget)
         self.gridLayout.setObjectName("gridLayout")
+        self.gridLayout.setSizeConstraint(QLayout.SetMaximumSize)
         self.splitter = QSplitter(self.centralwidget)
         self.splitter.setOrientation(Qt.Horizontal)
         self.splitter.setObjectName("splitter")
