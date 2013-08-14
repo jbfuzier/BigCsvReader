@@ -5,6 +5,9 @@ class ConfigBorg:
         self.__dict__ = self.__shared_state
     # and whatever else you want in your class -- that's all!
 
+    auto_apply_filter = True
+    first_line_as_header_title = False
+    delimiter = u";"
     edit_filters = [
                     {
                                 'key':Qt.Key_R,

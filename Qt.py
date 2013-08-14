@@ -5,7 +5,7 @@ from FileIO import *
 from Config import ConfigBorg
 import sys
 from TableView import MyTableView
-
+from OpenFileUISequence import OpenFileUISequence
 
 
 class MyWindow(QMainWindow):
@@ -24,7 +24,7 @@ class MyWindow(QMainWindow):
         self.splitter.setOrientation(Qt.Horizontal)
         self.splitter.setObjectName("splitter")
         self.lineEdit = QLineEdit(self.splitter)
-        self.lineEdit.setObjectName("lineEdit")
+        self.lineEdit.setObjectName("delimiterLineEdit")
         self.pushButton = QPushButton(self.splitter)
         self.pushButton.setObjectName("pushButton")
         self.gridLayout.addWidget(self.splitter, 0, 0, 1, 1)
@@ -91,29 +91,8 @@ class MyWindow(QMainWindow):
         filter_dialog = FilterHistoryDialog(self)
         filter_dialog.show()
 
-
-    def openFile(self,f_p):
-        """
-        Open requested file in listview
-        """
-        self.statusbar.showMessage("Opening %s (computing line offsets)"%f_p)
-        table_model = TableModel(self, f_p)
-        self.table_model = table_model
-        self.tableView.setModel(table_model)
-        self.statusbar.showMessage("Done")
-        self.status_progressbar.setFormat("%p% - %v/%m lines")
-        #self.status_progressbar.setRange(1, self.table_model.rowCount(self))
-        #self.status_progressbar.setValue(1)
-        self.status_progressbar.setTextVisible(True)
-
     def openFileMenuEvent(self, *args):
-        logging.debug("open file requested")
-        fname, _ = QFileDialog.getOpenFileName(self, 'Open file') #3rd optional arg : drirectory
-        if fname is None or fname == u'':
-            logging.warning("No file selected")
-            return False
-        logging.debug("Opening %s"%(fname))
-        self.openFile(fname)
+        openuisequence = OpenFileUISequence(self)
 
     def saveFileMenuEvent(self, *args):
         filename, _ = QFileDialog.getSaveFileName(self, "Save file")

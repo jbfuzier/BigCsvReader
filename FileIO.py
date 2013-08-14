@@ -4,6 +4,7 @@ import re
 import math
 from operator import itemgetter
 from PySide.QtCore import *
+from Config import ConfigBorg
 logging.basicConfig(level=logging.DEBUG)
 
 class TableModel(QAbstractTableModel):
@@ -86,6 +87,7 @@ class TableModel(QAbstractTableModel):
             )
         return filters
 
+
 class FileIO():
     #you must implement rowCount(), columnCount(), and data(row,collumn)
     def __init__(self, f_p):
@@ -97,12 +99,31 @@ class FileIO():
             'row_offsets':[(),(),]
         }"""
         self.RAM_CACHE_SIZE = 10
+        self.config = ConfigBorg()
         self.computeLineOffset()
         self.ram_cache = []
-        self.SEPARATOR = ","
+        self.SEPARATOR = self.config.delimiter
         self.cached_lines =(0,0)
         self.column_count = None
 
+    def autoFilter(self):
+        """
+        Compute autofilter list to populate combobox in the table header
+        """
+        # TODO : Max number of value/ collumns, filter to top 100 value or break after limit reach ? -> Speed & memory impact
+        # If collumn have unique values we would load everything in memory !!!
+        max_occurences = 100 # Can be optimized a lot to stop once the threshold is reached
+        autofilter = [{} for c in range(self.columnCount())]
+        for rowid in self.rowCount():
+            for c_id, c_content in enumerate(self.getRowAsArray(r)):
+                c_dict = autofilter[c_id]
+                if len(c_dict) > max_occurences:
+                    continue
+                if c_content in c_dict:
+                    c_dict[c_content] += 1
+                else:
+                    c_dict[c_content] = 1
+        pass
 
     def revertToFilter(self,id):
         """

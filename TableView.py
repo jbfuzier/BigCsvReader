@@ -4,6 +4,7 @@ from PySide.QtGui import *
 from FileIO import *
 from Config import ConfigBorg
 import sys
+from UI import *
 
 class MyTableView(QTableView):
     """
@@ -20,18 +21,26 @@ class MyTableView(QTableView):
         self.setFont(font)
         #table_view.resizeColumnsToContents() #Scan whole table, not efficient
         self.setSortingEnabled(True) #TODO Sorting on demand only, prevent table scan
-        table_header_view = self.horizontalHeader()
-        table_header_view.setMovable(True)
+        #table_header_view = self.horizontalHeader()
+        #table_header_view.setMovable(True)
+        my_table_header_view = MyHeaderView(self)
+        self.setHorizontalHeader(my_table_header_view)
+
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         #table_view.connect(table_view, SIGNAL("customContextMenuRequested(const QPoint)"), self, SLOT("test()"))
         self.customContextMenuRequested.connect(self.MyCustomContextMenu)
 
 
-
+    def scrollContentsBy(self, *args, **kwargs):
+        QTableView.scrollContentsBy(self, *args, **kwargs)
+        dx = args[0]
+        if dx != 0:
+            self.horizontalHeader().fixComboPositions()
 
     def setModel(self, *args, **kwargs):
         QTableView.setModel(self, *args, **kwargs)
         self.KeyPressed.connect(self.model().filterkeypressed)
+        self.horizontalHeader().showWidgets()
 
     def keyPressEvent(self, event, *args):
         keys = [e['key'] for e in self.config.table_filters]
