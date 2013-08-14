@@ -74,7 +74,7 @@ class MyWindow(QMainWindow):
 
         #self.setWindowTitle("CSV viewer")
         f_p = r"D:\LocalData\a189493\Desktop\servers_daily_01.csv"
-        self.openFile(f_p)
+        #self.openFile(f_p)
         #table_model = TableModel(self, f_p)
         #self.table_model = table_model
         #table_view = MyTableView()
