@@ -22,6 +22,8 @@ class OpenFileUISequence():
             self.config.auto_apply_filter = open_option.AutoApplyFilterscheckBox.isChecked()
             self.config.first_line_as_header_title = open_option.headerTitleCheckBox.isChecked()
             self.config.delimiter = open_option.delimiterLineEdit.text()
+            self.config.file_charset = self.config.charsets[open_option.CharsetComboBox.currentText()]
+            #TODO : Handle chardet analysys here
             self.openFile(fname)
             return True
         else:
@@ -68,6 +70,11 @@ class OpenOptionDialog(QDialog):
         self.AutoApplyFilterscheckBox.setChecked(self.config.auto_apply_filter)
         self.AutoApplyFilterscheckBox.setObjectName("AutoApplyFilterscheckBox")
         self.verticalLayout.addWidget(self.AutoApplyFilterscheckBox)
+        self.CharsetComboBox = QComboBox(self)
+        self.CharsetComboBox.addItems(self.config.charsets.keys())
+        #self.AutoApplyFilterscheckBox.setChecked(self.config.auto_apply_filter)
+        self.CharsetComboBox.setObjectName("CharsetComboBox")
+        self.verticalLayout.addWidget(self.CharsetComboBox)
         self.gridLayout.addLayout(self.verticalLayout, 1, 0, 1, 1)
         self.buttonBox = QDialogButtonBox(self)
         self.buttonBox.setOrientation(Qt.Horizontal)

@@ -2,6 +2,7 @@ import sys
 import logging
 import re
 import math
+import codecs
 from operator import itemgetter
 from PySide.QtCore import *
 from Config import ConfigBorg
@@ -91,7 +92,8 @@ class TableModel(QAbstractTableModel):
 class FileIO():
     #you must implement rowCount(), columnCount(), and data(row,collumn)
     def __init__(self, f_p):
-        self.f = open(f_p, 'rb')
+        self.config = ConfigBorg()
+        self.f = codecs.open(f_p, 'rb', encoding=self.config.file_charset, buffering=0)
         self.line_offsets = []
         self.data_row_offset_map = []
         """ contains : {
@@ -99,7 +101,7 @@ class FileIO():
             'row_offsets':[(),(),]
         }"""
         self.RAM_CACHE_SIZE = 10
-        self.config = ConfigBorg()
+        #TODO : Handle codec exception here and send UI event (Error dialog)
         self.computeLineOffset()
         self.ram_cache = []
         self.SEPARATOR = self.config.delimiter
@@ -137,14 +139,11 @@ class FileIO():
         logging.debug("Computing line offsets")
         start_offset = 0
         line_offsets = []
-        while True:
-            row =self.f.readline()
-            if len(row) <= 0:
-                break
-            end_offset = self.f.tell()
-            line_offsets.append( (start_offset, end_offset - start_offset) )
-            start_offset = end_offset
-            #current_offset += len(line)
+        # With content loaded as unicode, len(unicode str) should translate to correct offset in file
+        for row in self.f:
+            l = len(row)
+            line_offsets.append( (start_offset, l) )
+            start_offset += l
         fileorder = {
             'operation':'fileorder',
             'row_offsets':line_offsets,
@@ -241,7 +240,7 @@ class FileIO():
         """
         Save current filtered file to disk
         """
-        f = open(path, 'wb')
+        f = codecs.open(path, 'wb', encoding=self.config.file_charset)
         for i in range(self.rowCount()):
             row = self.getRow(i)
             f.write(row)

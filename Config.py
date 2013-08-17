@@ -5,6 +5,14 @@ class ConfigBorg:
         self.__dict__ = self.__shared_state
     # and whatever else you want in your class -- that's all!
 
+    file_charset = "latin-1"
+
+    charsets = {
+        'ascii':'ascii',
+        'utf-8':'utf-8',
+        'try to autodetect (slow)':'autodetect', #TODO chardet support for detection and Order in list
+        'latin-1':'latin-1',
+    }
     auto_apply_filter = True
     first_line_as_header_title = False
     delimiter = u";"
