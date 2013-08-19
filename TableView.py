@@ -1,4 +1,3 @@
-
 from PySide.QtCore import *
 from PySide.QtGui import *
 from FileIO import *
@@ -25,10 +24,11 @@ class MyTableView(QTableView):
         #table_header_view.setMovable(True)
         my_table_header_view = MyHeaderView(self)
         self.setHorizontalHeader(my_table_header_view)
-
+        my_table_header_view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         #table_view.connect(table_view, SIGNAL("customContextMenuRequested(const QPoint)"), self, SLOT("test()"))
         self.customContextMenuRequested.connect(self.MyCustomContextMenu)
+        my_table_header_view.customContextMenuRequested.connect(self.MyCustomHeaderContextMenu)
 
 
     def scrollContentsBy(self, *args, **kwargs):
@@ -40,7 +40,7 @@ class MyTableView(QTableView):
     def setModel(self, *args, **kwargs):
         QTableView.setModel(self, *args, **kwargs)
         self.KeyPressed.connect(self.model().filterkeypressed)
-        self.horizontalHeader().showWidgets()
+        #self.horizontalHeader().showWidgets()
 
     def keyPressEvent(self, event, *args):
         keys = [e['key'] for e in self.config.table_filters]
@@ -52,9 +52,27 @@ class MyTableView(QTableView):
             return True
         QTableView.keyPressEvent(self, event, *args)
 
+    def MyCustomHeaderContextMenu(self, *args):
+        menu = QMenu(self)
+        for option in [('Hide', 'MyCustomHeaderContextMenuHideEvent'), ('Enable Quick Filters', 'MyCustomHeaderContextMenuQuickFilterEvent')]:
+            action = QAction(option[0], menu)
+            callback = getattr(self, option[1])
+            x = args[0].x()
+            fu = lambda f=callback: f(x)
+            action.triggered.connect(fu)
+            menu_item = menu.addAction(action)
+        menu.exec_(QCursor().pos())
+
+    def MyCustomHeaderContextMenuHideEvent(self, *args):
+        column = self.columnAt(args[0])
+        logging.debug("Hiding column %s" % (column))
+        self.hideColumn(column)
+
+    def MyCustomHeaderContextMenuQuickFilterEvent(self, *args):
+        header = self.horizontalHeader()
+        header.enableQuickFilter()
 
     def MyCustomContextMenu(self):
-        print "test"
         menu = QMenu(self)
         for filter in self.config.table_filters:
             filter_action = QAction(filter['name'], menu)

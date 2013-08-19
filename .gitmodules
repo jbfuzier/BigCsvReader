@@ -1,0 +1,3 @@
+[submodule "chardet"]
+	path = chardet
+	url = https://github.com/erikrose/chardet.git

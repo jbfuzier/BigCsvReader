@@ -13,6 +13,7 @@ class TableModel(QAbstractTableModel):
         self.file_io = FileIO(f_p)
         QAbstractTableModel.__init__(self, parent, *args)
         self.initial_sort = 2
+        self.autofilter_items = None
 
     def rowCount(self, parent):
         return self.file_io.rowCount()
@@ -88,6 +89,11 @@ class TableModel(QAbstractTableModel):
             )
         return filters
 
+    def autoFilter(self):
+        if self.autofilter_items is None:
+            self.autofilter_items = self.file_io.autoFilter()
+        return self.autofilter_items
+
 
 class FileIO():
     #you must implement rowCount(), columnCount(), and data(row,collumn)
@@ -114,18 +120,18 @@ class FileIO():
         """
         # TODO : Max number of value/ collumns, filter to top 100 value or break after limit reach ? -> Speed & memory impact
         # If collumn have unique values we would load everything in memory !!!
-        max_occurences = 100 # Can be optimized a lot to stop once the threshold is reached
+        max_occurences = self.config.max_autofilter_dropdown_value # Can be optimized a lot to stop once the threshold is reached
         autofilter = [{} for c in range(self.columnCount())]
-        for rowid in self.rowCount():
-            for c_id, c_content in enumerate(self.getRowAsArray(r)):
+        for rowid in range(self.rowCount()):
+            for c_id, c_content in enumerate(self.getRowAsArray(rowid)):
                 c_dict = autofilter[c_id]
-                if len(c_dict) > max_occurences:
-                    continue
                 if c_content in c_dict:
                     c_dict[c_content] += 1
-                else:
+                elif len(c_dict) < max_occurences:
                     c_dict[c_content] = 1
-        pass
+        items = [c.items() for c in autofilter]
+        items = [sorted(c, key=itemgetter(1), reverse=True) for c in items]
+        return items
 
     def revertToFilter(self,id):
         """
@@ -151,6 +157,8 @@ class FileIO():
         }
         self.data_row_offset_map.append(fileorder)
         logging.debug("Done")
+
+#TODO Handle malformed CSV with variable number of item/line (option in open for sanity checks ? )
 
     def getLineOffsets(self):
         return self.data_row_offset_map[-1]['row_offsets']

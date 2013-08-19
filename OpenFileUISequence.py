@@ -3,6 +3,7 @@ from PySide.QtGui import *
 import logging
 from FileIO import TableModel
 from Config import ConfigBorg
+import Tools
 
 class OpenFileUISequence():
     def __init__(self, mainwindows):
@@ -22,8 +23,10 @@ class OpenFileUISequence():
             self.config.auto_apply_filter = open_option.AutoApplyFilterscheckBox.isChecked()
             self.config.first_line_as_header_title = open_option.headerTitleCheckBox.isChecked()
             self.config.delimiter = open_option.delimiterLineEdit.text()
-            self.config.file_charset = self.config.charsets[open_option.CharsetComboBox.currentText()]
-            #TODO : Handle chardet analysys here
+            self.config.file_charset = [d['codec'] for d in self.config.charsets if d['name'] == open_option.CharsetComboBox.currentText()][0]
+            if self.config.file_charset == 'autodetect':
+                self.mainwindows.statusbar.showMessage("Guessing encoding")
+                self.config.file_charset = Tools.guessEncoding(fname)
             self.openFile(fname)
             return True
         else:
@@ -34,7 +37,7 @@ class OpenFileUISequence():
         """
         Open requested file in listview
         """
-        self.mainwindows.statusbar.showMessage("Opening %s (computing line offsets)"%f_p)
+        self.mainwindows.statusbar.showMessage("Opening %s (computing line offsets) - %s" % (f_p, self.config.file_charset))
         table_model = TableModel(self.mainwindows, f_p)
         self.mainwindows.table_model = table_model
         self.mainwindows.tableView.setModel(table_model)
@@ -71,7 +74,7 @@ class OpenOptionDialog(QDialog):
         self.AutoApplyFilterscheckBox.setObjectName("AutoApplyFilterscheckBox")
         self.verticalLayout.addWidget(self.AutoApplyFilterscheckBox)
         self.CharsetComboBox = QComboBox(self)
-        self.CharsetComboBox.addItems(self.config.charsets.keys())
+        self.CharsetComboBox.addItems([v['name'] for v in self.config.charsets])
         #self.AutoApplyFilterscheckBox.setChecked(self.config.auto_apply_filter)
         self.CharsetComboBox.setObjectName("CharsetComboBox")
         self.verticalLayout.addWidget(self.CharsetComboBox)

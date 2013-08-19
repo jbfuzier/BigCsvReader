@@ -6,13 +6,26 @@ class ConfigBorg:
     # and whatever else you want in your class -- that's all!
 
     file_charset = "latin-1"
-
-    charsets = {
-        'ascii':'ascii',
-        'utf-8':'utf-8',
-        'try to autodetect (slow)':'autodetect', #TODO chardet support for detection and Order in list
-        'latin-1':'latin-1',
-    }
+    max_autofilter_dropdown_value = 100
+    charsets = [
+        {
+            'name': 'latin-1',
+            'codec': 'latin-1',
+        },
+        {
+            'name': 'ascii',
+            'codec': 'ascii',
+        },
+        {
+            'name': 'utf-8',
+            'codec': 'utf-8',
+        },
+        {
+            'name': 'try to autodetect (might be slow)',
+            'codec': 'autodetect',
+        },
+    ]
+    chardet_nb_of_line = 100000 #Number of line to use for charset autodetection
     auto_apply_filter = True
     first_line_as_header_title = False
     delimiter = u";"
