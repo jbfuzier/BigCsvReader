@@ -99,7 +99,8 @@ class FileIO():
     #you must implement rowCount(), columnCount(), and data(row,collumn)
     def __init__(self, f_p):
         self.config = ConfigBorg()
-        self.f = codecs.open(f_p, 'rb', encoding=self.config.file_charset, buffering=0)
+        #self.f = codecs.open(f_p, 'rb', encoding=self.config.file_charset, buffering=0)
+        self.f = File( f_p, cache_size = 10 * 1024 * 1024, encoding = self.config.file_charset)
         self.line_offsets = []
         self.data_row_offset_map = []
         """ contains : {
@@ -314,11 +315,59 @@ class FileIO():
                 for l in self.ram_cache:
                     yield l"""
 
+
+
+
+class File():
+    def __init__(self, f_p, cache_size = 1 * 1024, encoding = 'latin-1'):
+        import mmap
+        import os
+        self.encoding = encoding
+        self.f = open(f_p, 'rb', buffering=0)
+        f_p_getsize = os.path.getsize(f_p)
+        self.f.seek(0,2)
+        f_p_seeksize = self.f.tell()
+        self.f.seek(0)
+        logging.debug("File size %s (getsize) %s (seek)" % (f_p_getsize, f_p_seeksize))
+        if cache_size > f_p_getsize:
+            cache_size = f_p_getsize
+        self.cache_size = cache_size
+        self.f_cache = mmap.mmap(-1, cache_size)
+        self.f_cache.write(self.f.read(cache_size))
+        self.offset = 0
+
+    def seek(self, offset):
+        self.offset = offset
+
+    def read(self, size):
+        f = self.__getFileObjectByOffset(self.offset)
+        if (self.offset + size) > self.cache_size:
+            f=self.f
+        f.seek(self.offset)
+        read = f.read(size)
+        return read.decode(encoding=self.encoding)
+
+    def __getFileObjectByOffset(self, offset):
+        if offset > self.cache_size:
+            return self.f
+        else:
+            return self.f_cache
+
+    def close(self):
+        self.f.close()
+        self.f_cache.close()
+
+    def __iter__(self):
+        for row in self.f:
+            yield row
+
 if __name__ == '__main__':
     #f_p = sys.argv[1]
     f_p = r"D:\LocalData\a189493\Desktop\servers_daily_01.csv"
-    fio = FileIO(f_p)
+    """fio = FileIO(f_p)
     print fio.data(10,0)
     print fio.data(12825,0)
     print fio.rowCount()
-    print fio.columnCount()
+    print fio.columnCount()"""
+    f = File(f_p)
+    f.read(1024*10)
