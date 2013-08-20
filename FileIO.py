@@ -6,6 +6,9 @@ import codecs
 from operator import itemgetter
 from PySide.QtCore import *
 from Config import ConfigBorg
+import mmap
+import os
+
 logging.basicConfig(level=logging.DEBUG)
 
 class TableModel(QAbstractTableModel):
@@ -100,7 +103,7 @@ class FileIO():
     def __init__(self, f_p):
         self.config = ConfigBorg()
         #self.f = codecs.open(f_p, 'rb', encoding=self.config.file_charset, buffering=0)
-        self.f = File( f_p, cache_size = 10 * 1024 * 1024, encoding = self.config.file_charset)
+        self.f = File( f_p, cache_size = 100 * 1024 * 1024, encoding = self.config.file_charset)
         self.line_offsets = []
         self.data_row_offset_map = []
         """ contains : {
@@ -319,11 +322,9 @@ class FileIO():
 
 
 class File():
-    def __init__(self, f_p, cache_size = 1 * 1024, encoding = 'latin-1'):
-        import mmap
-        import os
+    def __init__(self, f_p, cache_size = 1 * 1024 * 1024, encoding = 'latin-1'):
         self.encoding = encoding
-        self.f = open(f_p, 'rb', buffering=0)
+        self.f = open(f_p, 'a+b', buffering=0)
         f_p_getsize = os.path.getsize(f_p)
         self.f.seek(0,2)
         f_p_seeksize = self.f.tell()
@@ -332,8 +333,7 @@ class File():
         if cache_size > f_p_getsize:
             cache_size = f_p_getsize
         self.cache_size = cache_size
-        self.f_cache = mmap.mmap(-1, cache_size)
-        self.f_cache.write(self.f.read(cache_size))
+        self.f_cache = mmap.mmap(self.f.fileno(), int(cache_size))
         self.offset = 0
 
     def seek(self, offset):
@@ -341,10 +341,14 @@ class File():
 
     def read(self, size):
         f = self.__getFileObjectByOffset(self.offset)
-        if (self.offset + size) > self.cache_size:
+        if (type(f) == mmap.mmap) and ((self.offset + size) > self.cache_size):
+            read = f.read(-1)
             f=self.f
-        f.seek(self.offset)
-        read = f.read(size)
+            f.seek(self.cache_size)
+            read += f.read(size - (self.cache_size - self.offset))
+        else:
+            f.seek(self.offset)
+            read = f.read(size)
         return read.decode(encoding=self.encoding)
 
     def __getFileObjectByOffset(self, offset):
